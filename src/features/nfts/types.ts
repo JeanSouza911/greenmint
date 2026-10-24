@@ -7,4 +7,6 @@ export interface NFT {
   imageUrl: string
   priceEth: string
   available: boolean
+  createdAt: string
+  popularityScore: number
 }

@@ -11,6 +11,9 @@ export const nftFixtures: NFT[] = [
     imageUrl: placeholderImage,
     priceEth: '1.19',
     available: true,
+    createdAt: '2026-10-20',
+    popularityScore: 95,
+
   },
   {
     id: 'nft-002',
@@ -20,6 +23,8 @@ export const nftFixtures: NFT[] = [
     imageUrl: placeholderImage,
     priceEth: '1.69',
     available: true,
+    createdAt: '2026-10-15',
+    popularityScore: 72,
   },
   {
     id: 'nft-003',
@@ -29,5 +34,7 @@ export const nftFixtures: NFT[] = [
     imageUrl: placeholderImage,
     priceEth: '1.99',
     available: true,
+    createdAt: '2026-10-22',
+    popularityScore: 88,
   },
 ]
