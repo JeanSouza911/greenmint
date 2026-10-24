@@ -2,7 +2,10 @@
 import { useState } from 'react'
 import { nftFixtures } from '../../features/nfts/fixtures'
 import { NFTCard } from './NFTCard'
-import { NFTFilters } from './NFTFilters'
+import {
+  NFTFilters,
+  type PriceRange,
+} from './NFTFilters'
 
 const ALL_CATEGORIES = 'Todas'
 
@@ -10,16 +13,27 @@ export function NFTCatalog() {
   const [selectedCategory, setSelectedCategory] =
     useState(ALL_CATEGORIES)
 
+  const [priceRange, setPriceRange] =
+    useState<PriceRange | null>(null)
+
   const categories = [
     ALL_CATEGORIES,
     ...new Set(nftFixtures.map((nft) => nft.category)),
   ]
 
   const filteredNFTs = nftFixtures.filter((nft) => {
-    return (
+    const matchesCategory =
       selectedCategory === ALL_CATEGORIES ||
       nft.category === selectedCategory
-    )
+
+    const price = Number(nft.priceEth)
+
+    const matchesPrice =
+      priceRange === null ||
+      (price >= priceRange.min &&
+        price <= priceRange.max)
+
+    return matchesCategory && matchesPrice
   })
 
   return (
@@ -40,10 +54,11 @@ export function NFTCatalog() {
           categories={categories}
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}
+          onPriceApply={setPriceRange}
         />
 
         <div className="min-w-0">
-          <div className="mb-6 flex items-center justify-between">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
             <h3 className="text-lg font-bold">
               Todos os NFTs
             </h3>
@@ -64,7 +79,7 @@ export function NFTCatalog() {
             </div>
           ) : (
             <p className="py-12 text-center text-text-secondary">
-              Nenhum NFT encontrado nesta categoria.
+              Nenhum NFT encontrado com os filtros selecionados.
             </p>
           )}
         </div>
