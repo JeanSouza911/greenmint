@@ -1,6 +1,7 @@
 
 import { useState } from 'react'
-import { nftFixtures } from '../../features/nfts/fixtures'
+import { useQuery } from '@tanstack/react-query'
+import { getNFTs } from '../../features/nfts/api'
 import { NFTCard } from './NFTCard'
 import {
   NFTFilters,
@@ -31,12 +32,22 @@ export function NFTCatalog() {
   const [sortOrder, setSortOrder] =
     useState<SortOrder>('recent')
 
+  const {
+    data: nfts = [],
+    isPending,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: ['nfts'],
+    queryFn: getNFTs,
+})
+
   const categories = [
     ALL_CATEGORIES,
-    ...new Set(nftFixtures.map((nft) => nft.category)),
+    ...new Set(nfts.map((nft) => nft.category)),
   ]
 
-  const filteredNFTs = nftFixtures.filter((nft) => {
+  const filteredNFTs = nfts.filter((nft) => {
     const matchesCategory =
       selectedCategory === ALL_CATEGORIES ||
       nft.category === selectedCategory
@@ -160,17 +171,33 @@ export function NFTCatalog() {
             {displayedNFTs.length} NFTs encontrados
           </p>
 
-          {displayedNFTs.length > 0 ? (
-            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-              {displayedNFTs.map((nft) => (
-                <NFTCard key={nft.id} nft={nft} />
-              ))}
-            </div>
-          ) : (
-            <p className="py-12 text-center text-text-secondary">
-              Nenhum NFT encontrado com os filtros selecionados.
-            </p>
-          )}
+          {isPending ? (
+          <p role="status" className="py-12 text-text-secondary">
+            Carregando NFTs...
+          </p>
+        ) : isError ? (
+          <div role="alert" className="py-12">
+          <p>Não foi possível carregar os NFTs.</p>
+
+          <button
+          type="button"
+          onClick={() => void refetch()}
+          className="mt-4 rounded bg-accent px-4 py-2 text-page"
+      >
+            Tentar novamente
+          </button>
+          </div>
+    ) : displayedNFTs.length > 0 ? (
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {displayedNFTs.map((nft) => (
+          <NFTCard key={nft.id} nft={nft} />
+    ))}
+  </div>
+) : (
+        <p className="py-12 text-center text-text-secondary">
+          Nenhum NFT encontrado com os filtros selecionados.
+        </p>
+)}
         </div>
       </div>
     </section>
