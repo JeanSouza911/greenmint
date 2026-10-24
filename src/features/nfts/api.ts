@@ -31,3 +31,15 @@ export async function getNFTs(
 
   return data
 }
+
+export async function getNFTById(
+  id: string,
+  signal?: AbortSignal,
+): Promise<NFT> {
+  const { data } = await api.get<NFT>(
+    `/nfts/${encodeURIComponent(id)}`,
+    { signal },
+  )
+
+  return data
+}

@@ -13,6 +13,11 @@ export const nftFixtures: NFT[] = [
     available: true,
     createdAt: '2026-10-20',
     popularityScore: 95,
+    editions: [
+  { id: 'standard', name: 'Standard', stock: 5 },
+  { id: 'rare', name: 'Rare', stock: 2 },
+],
+  images: [placeholderImage],
 
   },
   {
@@ -25,6 +30,11 @@ export const nftFixtures: NFT[] = [
     available: true,
     createdAt: '2026-10-15',
     popularityScore: 72,
+    editions: [
+  { id: 'standard', name: 'Standard', stock: 3 },
+  { id: 'rare', name: 'Exclusive', stock: 0 },
+],
+    images: [placeholderImage],
   },
   {
     id: 'nft-003',
@@ -36,5 +46,9 @@ export const nftFixtures: NFT[] = [
     available: true,
     createdAt: '2026-10-22',
     popularityScore: 88,
+    editions: [
+  { id: 'standard', name: 'Standard', stock: 4 },
+],
+    images: [placeholderImage],
   },
 ]

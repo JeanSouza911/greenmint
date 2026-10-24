@@ -1,5 +1,4 @@
-
-import { Link } from '@tanstack/react-router'
+import { Link } from "@tanstack/react-router";
 
 export function Header() {
   return (
@@ -8,14 +7,14 @@ export function Header() {
         <Link
           to="/"
           search={{
-          search: '',
-          category: 'Todas',
-          minPrice: undefined,
-          maxPrice: undefined,
-          sort: 'recent',
-          view: 'all',
-          page: 1,
-}}
+            search: "",
+            category: "Todas",
+            minPrice: undefined,
+            maxPrice: undefined,
+            sort: "recent",
+            view: "all",
+            page: 1,
+          }}
           aria-label="Kurio - página inicial"
           className="text-sm font-bold tracking-[0.2em]"
         >
@@ -29,34 +28,27 @@ export function Header() {
           <Link
             to="/"
             search={{
-            search: '',
-            category: 'Todas',
-            minPrice: undefined,
-            maxPrice: undefined,
-            sort: 'recent',
-            view: 'all',
-            page: 1,
-}}
+              search: "",
+              category: "Todas",
+              minPrice: undefined,
+              maxPrice: undefined,
+              sort: "recent",
+              view: "all",
+              page: 1,
+            }}
             aria-current="page"
             className="border-b-2 border-accent py-5 font-bold text-accent"
           >
             Início
           </Link>
 
-          <a
-            href="#mercado"
-            className="transition-colors hover:text-accent"
-          >
+          <a href="#mercado" className="transition-colors hover:text-accent">
             Mercado
           </a>
 
-          <span className="text-text-secondary">
-            Criadores
-          </span>
+          <span className="text-text-secondary">Criadores</span>
 
-          <span className="text-text-secondary">
-            Aprenda
-          </span>
+          <span className="text-text-secondary">Aprenda</span>
         </nav>
 
         <div className="flex items-center gap-4">
@@ -69,14 +61,13 @@ export function Header() {
             <SearchIcon />
           </button>
 
-          <button
-            type="button"
-            disabled
-            aria-label="Carrinho - em breve"
-            className="opacity-60"
+          <Link
+            to="/cart"
+            aria-label="Abrir carrinho"
+            className="transition-colors hover:text-accent"
           >
             <CartIcon />
-          </button>
+          </Link>
 
           <button
             type="button"
@@ -88,7 +79,7 @@ export function Header() {
         </div>
       </div>
     </header>
-  )
+  );
 }
 
 function SearchIcon() {
@@ -106,7 +97,7 @@ function SearchIcon() {
       <circle cx="11" cy="11" r="7" />
       <path d="m20 20-4-4" />
     </svg>
-  )
+  );
 }
 
 function CartIcon() {
@@ -126,5 +117,5 @@ function CartIcon() {
       <circle cx="20" cy="21" r="1" />
       <path d="M1 1h4l2.5 13h12l2.5-9H6" />
     </svg>
-  )
+  );
 }

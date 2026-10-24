@@ -1,5 +1,6 @@
 
 import type { NFT } from '../../features/nfts/types'
+import { Link } from '@tanstack/react-router'
 
 interface NFTCardProps {
   nft: NFT
@@ -19,7 +20,13 @@ export function NFTCard({ nft }: NFTCardProps) {
 
       <div className="space-y-2 py-3">
         <h3 className="truncate text-sm font-medium">
-          {nft.name}
+    <Link
+        to="/nfts/$nftId"
+        params={{ nftId: nft.id }}
+        className="hover:text-accent hover:underline"
+     >
+    {nft.name}
+    </Link>
         </h3>
 
         <p className="text-xs text-text-secondary">
