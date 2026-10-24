@@ -1,5 +1,6 @@
 import { http, HttpResponse } from "msw";
 import { nftFixtures } from "../features/nfts/fixtures";
+import { toWei, fromWei } from '../features/cart/eth'
 import type { NFT } from "../features/nfts/types";
 
 import type { Cart, AddCartItemInput } from "../features/cart/types";
@@ -32,6 +33,25 @@ function readCart(): Cart {
 function saveCart(cart: Cart): void {
   localStorage.setItem(CART_KEY, JSON.stringify(cart));
 }
+
+
+import type { Order, CreateOrderInput } from '../features/orders/api'
+
+const ORDERS_KEY = 'kurio:orders'
+
+function readOrders(): Order[] {
+  try {
+    const stored = localStorage.getItem(ORDERS_KEY)
+    return stored ? JSON.parse(stored) as Order[] : []
+  } catch {
+    return []
+  }
+}
+
+function saveOrders(orders: Order[]) {
+  localStorage.setItem(ORDERS_KEY, JSON.stringify(orders))
+}
+
 
 export const handlers = [
   http.get("/api/nfts", ({ request }) => {
@@ -248,4 +268,199 @@ export const handlers = [
 
     return HttpResponse.json(cart);
   }),
+
+
+http.post('/api/cart/quote', async ({ request }) => {
+  const body = await request.json() as {
+    coupon?: string | null
+  }
+
+  const coupon = body.coupon?.trim().toUpperCase() || null
+
+  if (coupon && coupon !== 'KURIO10') {
+    return HttpResponse.json(
+      {
+        message: coupon === 'EXPIRED10'
+          ? 'Cupom expirado.'
+          : 'Cupom inválido.',
+      },
+      { status: 422 },
+    )
+  }
+
+  const cart = readCart()
+  let subtotal = 0n
+
+  for (const item of cart.items) {
+    const nft = nftFixtures.find(
+      (nft) => nft.id === item.nftId,
+    )
+
+    const edition = nft?.editions.find(
+      (edition) => edition.id === item.editionId,
+    )
+
+    if (
+      !nft?.available ||
+      !edition ||
+      !Number.isInteger(item.quantity) ||
+      item.quantity < 1 ||
+      item.quantity > edition.stock
+    ) {
+      return HttpResponse.json(
+        { message: 'O carrinho contém itens indisponíveis.' },
+        { status: 409 },
+      )
+    }
+
+    subtotal += toWei(nft.priceEth) * BigInt(item.quantity)
+  }
+
+  // Cenário simulado: cupom de 10%.
+  const discount = coupon === 'KURIO10'
+    ? subtotal / 10n
+    : 0n
+
+  // Taxa fixa de rede simulada, apenas para carrinhos não vazios.
+  const networkFee = cart.items.length > 0
+    ? toWei('0.005')
+    : 0n
+
+  const total = subtotal - discount + networkFee
+
+  return HttpResponse.json({
+    subtotalEth: fromWei(subtotal),
+    discountEth: fromWei(discount),
+    networkFeeEth: fromWei(networkFee),
+    totalEth: fromWei(total),
+    coupon,
+  })
+}),
+
+http.post('/api/orders', async ({ request }) => {
+  const input = await request.json() as CreateOrderInput
+  const orders = readOrders()
+
+  // Evita pedidos duplicados
+  const existing = orders.find(
+    (order) => order.id === input.idempotencyKey,
+  )
+
+  if (existing) {
+    return HttpResponse.json(existing)
+  }
+
+  const cart = readCart()
+
+  if (cart.items.length === 0) {
+    return HttpResponse.json(
+      { message: 'Carrinho vazio.' },
+      { status: 400 },
+    )
+  }
+
+  if (!input.walletAddress?.trim() || !input.network?.trim()) {
+    return HttpResponse.json(
+      { message: 'Carteira ou rede inválida.' },
+      { status: 400 },
+    )
+  }
+
+  if (!input.idempotencyKey?.trim()) {
+    return HttpResponse.json(
+      { message: 'Identificador da operação obrigatório.' },
+      { status: 400 },
+    )
+  }
+
+  let subtotal = 0n
+
+  for (const item of cart.items) {
+    const nft = nftFixtures.find(
+      (nft) => nft.id === item.nftId,
+    )
+
+    const edition = nft?.editions.find(
+      (edition) => edition.id === item.editionId,
+    )
+
+    if (
+      !nft?.available ||
+      !edition ||
+      !Number.isInteger(item.quantity) ||
+      item.quantity < 1 ||
+      item.quantity > edition.stock
+    ) {
+      return HttpResponse.json(
+        { message: 'Estoque indisponível.' },
+        { status: 409 },
+      )
+    }
+
+    subtotal += toWei(nft.priceEth) * BigInt(item.quantity)
+  }
+
+  const coupon = input.coupon?.trim().toUpperCase() || null
+
+  if (coupon && coupon !== 'KURIO10') {
+    return HttpResponse.json(
+      { message: 'Cupom inválido ou expirado.' },
+      { status: 422 },
+    )
+  }
+
+  const discount = coupon === 'KURIO10'
+    ? subtotal / 10n
+    : 0n
+
+  const networkFee = toWei('0.005')
+  const total = subtotal - discount + networkFee
+
+  // Revalida o total enviado pelo cliente
+  if (input.expectedTotalEth !== fromWei(total)) {
+    return HttpResponse.json(
+      { message: 'Cotação desatualizada. Revise o carrinho.' },
+      { status: 409 },
+    )
+  }
+
+  const order: Order = {
+    id: input.idempotencyKey,
+    status: 'confirmed',
+    transactionId: `mock-${input.idempotencyKey}`,
+    items: cart.items.map((item) => ({ ...item })),
+    quote: {
+      subtotalEth: fromWei(subtotal),
+      discountEth: fromWei(discount),
+      networkFeeEth: fromWei(networkFee),
+      totalEth: fromWei(total),
+      coupon,
+    },
+    createdAt: new Date().toISOString(),
+  }
+
+  orders.push(order)
+  saveOrders(orders)
+
+  // Limpa o carrinho apenas após a confirmação
+  saveCart({ items: [] })
+
+  return HttpResponse.json(order, { status: 201 })
+}),
+
+http.get('/api/orders/:id', ({ params }) => {
+  const order = readOrders().find(
+    (item) => item.id === params.id,
+  )
+
+  if (!order) {
+    return HttpResponse.json(
+      { message: 'Pedido não encontrado.' },
+      { status: 404 },
+    )
+  }
+
+  return HttpResponse.json(order)
+}),
+
 ];

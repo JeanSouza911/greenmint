@@ -1,6 +1,8 @@
 
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
+import { getCartQuote } from '../features/cart/quote'
 import axios from 'axios'
 
 import { Header } from '../components/layout/Header'
@@ -13,27 +15,6 @@ import {
 export const Route = createFileRoute('/cart')({
   component: CartPage,
 })
-
-function formatEth(value: bigint): string {
-  const whole = value / 10n ** 18n
-  const fraction = (value % (10n ** 18n))
-    .toString()
-    .padStart(18, '0')
-    .replace(/0+$/, '')
-
-  return fraction ? `${whole}.${fraction}` : String(whole)
-}
-
-function toWei(value: string): bigint {
-  if (!/^\d+(\.\d{1,18})?$/.test(value)) {
-    throw new Error('Preço ETH inválido')
-  }
-
-  const [whole, fraction = ''] = value.split('.')
-
-  return BigInt(whole) * 10n ** 18n +
-    BigInt(fraction.padEnd(18, '0'))
-}
 
 function CartPage() {
   const queryClient = useQueryClient()
@@ -71,12 +52,6 @@ function CartPage() {
   const busy = updateMutation.isPending ||
     removeMutation.isPending
 
-  const subtotal = cart?.items.reduce(
-    (total, item) =>
-      total + toWei(item.priceEth) * BigInt(item.quantity),
-    0n,
-  ) ?? 0n
-
   const mutationError =
     updateMutation.error ?? removeMutation.error
 
@@ -84,6 +59,26 @@ function CartPage() {
     ? mutationError.response?.data?.message ??
       'Não foi possível atualizar o carrinho.'
     : 'Não foi possível atualizar o carrinho.'
+
+    const [couponInput, setCouponInput] = useState('')
+const [appliedCoupon, setAppliedCoupon] = useState('')
+
+const {
+  data: quote,
+  isPending: quotePending,
+  isError: quoteError,
+  error: quoteErrorDetail,
+} = useQuery({
+  queryKey: ['cart-quote', cart, appliedCoupon],
+  queryFn: ({ signal }) => getCartQuote(appliedCoupon, signal),
+  enabled: Boolean(cart?.items.length),
+  retry: false,
+})
+
+const quoteErrorMessage =
+  axios.isAxiosError(quoteErrorDetail)
+    ? quoteErrorDetail.response?.data?.message
+    : 'Não foi possível calcular a cotação.'
 
   return (
     <>
@@ -215,16 +210,90 @@ function CartPage() {
                 Resumo do carrinho
               </h2>
 
-              <div className="flex justify-between gap-3">
-                <span>Subtotal estimado</span>
-                <strong>{formatEth(subtotal)} ETH</strong>
-              </div>
+              
+<form
+  onSubmit={(event) => {
+    event.preventDefault()
+    setAppliedCoupon(couponInput.trim().toUpperCase())
+  }}
+  className="mb-6 space-y-3"
+>
+  <label htmlFor="coupon" className="block text-sm">
+    Cupom de desconto
+  </label>
 
-              <p className="mt-5 text-xs leading-5 text-text-secondary">
-                Desconto, taxa de rede e total serão
-                calculados pela API de cotação antes
-                da confirmação da compra.
-              </p>
+  <input
+    id="coupon"
+    value={couponInput}
+    onChange={(event) => setCouponInput(event.target.value)}
+    placeholder="Digite seu cupom"
+    className="w-full rounded border border-[#674531] bg-page px-3 py-2"
+  />
+
+  <button
+    type="submit"
+    className="rounded bg-accent px-4 py-2 font-bold text-page"
+  >
+    Aplicar cupom
+  </button>
+
+  {appliedCoupon && (
+    <button
+      type="button"
+      onClick={() => {
+        setCouponInput('')
+        setAppliedCoupon('')
+      }}
+      className="ml-3 text-sm text-text-secondary underline"
+    >
+      Remover cupom
+    </button>
+  )}
+</form>
+
+{quotePending ? (
+  <p role="status">Calculando cotação...</p>
+) : quoteError ? (
+  <p role="alert" className="text-sm text-red-400">
+    {quoteErrorMessage}
+  </p>
+) : quote ? (
+  <dl className="space-y-4 text-sm">
+    <div className="flex justify-between gap-3">
+      <dt>Subtotal</dt>
+      <dd>{quote.subtotalEth} ETH</dd>
+    </div>
+
+    <div className="flex justify-between gap-3">
+      <dt>Desconto</dt>
+      <dd>{quote.discountEth} ETH</dd>
+    </div>
+
+    <div className="flex justify-between gap-3">
+      <dt>Taxa de rede</dt>
+      <dd>{quote.networkFeeEth} ETH</dd>
+    </div>
+
+    <div className="flex justify-between gap-3 border-t border-[#674531] pt-4 text-base font-bold">
+      <dt>Total</dt>
+      <dd className="text-accent">{quote.totalEth} ETH</dd>
+    </div>
+  </dl>
+) : null}
+
+<Link
+  to="/checkout"
+  search={{ coupon: appliedCoupon }}
+  disabled={quotePending || quoteError || !quote}
+  className={`mt-6 block rounded bg-accent px-5 py-3 text-center font-bold text-page ${
+    quotePending || quoteError || !quote
+      ? 'pointer-events-none opacity-50'
+      : ''
+  }`}
+>
+  Ir para pagamento
+</Link>
+
             </aside>
           </div>
         )}
