@@ -7,6 +7,15 @@ export function Header() {
       <div className="mx-auto flex min-h-18 max-w-300 items-center justify-between gap-6 px-4 sm:px-6 xl:px-0">
         <Link
           to="/"
+          search={{
+          search: '',
+          category: 'Todas',
+          minPrice: undefined,
+          maxPrice: undefined,
+          sort: 'recent',
+          view: 'all',
+          page: 1,
+}}
           aria-label="Kurio - página inicial"
           className="text-sm font-bold tracking-[0.2em]"
         >
@@ -19,6 +28,15 @@ export function Header() {
         >
           <Link
             to="/"
+            search={{
+            search: '',
+            category: 'Todas',
+            minPrice: undefined,
+            maxPrice: undefined,
+            sort: 'recent',
+            view: 'all',
+            page: 1,
+}}
             aria-current="page"
             className="border-b-2 border-accent py-5 font-bold text-accent"
           >

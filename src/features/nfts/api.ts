@@ -1,7 +1,33 @@
+
 import { api } from '../../lib/api'
 import type { NFT } from './types'
 
-export async function getNFTs(): Promise<NFT[]> {
-  const { data } = await api.get<NFT[]>('/nfts')
+export interface NFTQueryParams {
+  search?: string
+  category?: string
+  minPrice?: number
+  maxPrice?: number
+  sort?: 'recent' | 'price-asc' | 'price-desc'
+  page?: number
+  limit?: number
+  view?: 'all' | 'new' | 'trending'
+}
+
+export interface NFTListResponse {
+  items: NFT[]
+  total: number
+  page: number
+  totalPages: number
+}
+
+export async function getNFTs(
+  params: NFTQueryParams = {},
+  signal?: AbortSignal,
+): Promise<NFTListResponse> {
+  const { data } = await api.get<NFTListResponse>('/nfts', {
+    params,
+    signal,
+  })
+
   return data
 }

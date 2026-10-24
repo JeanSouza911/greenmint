@@ -1,6 +1,5 @@
 
 import { useState, type FormEvent } from 'react'
-
 export interface PriceRange {
   min: number
   max: number
@@ -11,6 +10,7 @@ interface NFTFiltersProps {
   selectedCategory: string
   onCategoryChange: (category: string) => void
   onPriceApply: (range: PriceRange | null) => void
+  appliedPriceRange: PriceRange | null
 }
 
 export function NFTFilters({
@@ -18,10 +18,17 @@ export function NFTFilters({
   selectedCategory,
   onCategoryChange,
   onPriceApply,
+  appliedPriceRange,
 }: NFTFiltersProps) {
-  const [minPrice, setMinPrice] = useState('0')
-  const [maxPrice, setMaxPrice] = useState('12.30')
-  const [error, setError] = useState('')
+  const [minPrice, setMinPrice] = useState(
+  String(appliedPriceRange?.min ?? 0),
+)
+
+const [maxPrice, setMaxPrice] = useState(
+  String(appliedPriceRange?.max ?? 12.30),
+)
+
+const [error, setError] = useState('')
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
